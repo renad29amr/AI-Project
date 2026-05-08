@@ -88,11 +88,8 @@ with st.sidebar:
     st.subheader("Model Settings")
     lr_threshold = st.slider("Logistic Regression Threshold", 0.1, 0.9, 0.35, 0.05)
     dt_threshold = st.slider("Decision Tree Threshold",        0.1, 0.9, 0.40, 0.05)
-    rf_threshold = st.slider("Random Forest Threshold",        0.1, 0.9, 0.40, 0.05)
-    xgb_threshold = st.slider("XGBoost Threshold",            0.1, 0.9, 0.40, 0.05)
-
-    st.markdown("---")
     dt_max_depth = st.slider("Decision Tree Max Depth",  2, 20, 8)
+    rf_threshold = st.slider("Random Forest Threshold",        0.1, 0.9, 0.40, 0.05)
     rf_n_estimators = st.slider("Random Forest Trees",  50, 500, 100, 50)
     rf_max_depth = st.slider("Random Forest Max Depth", 2, 20, 10)
     xgb_n_estimators = st.slider("XGBoost Rounds",      50, 500, 100, 50)
