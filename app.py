@@ -62,7 +62,6 @@ def preprocess(df):
     df.drop(columns=["fnlwgt"], inplace=True, errors="ignore")
     df.drop(columns=["education"], inplace=True, errors="ignore")
     df["capital_net"] = df["capital_gain"] - df["capital_loss"]
-    df.drop(columns=["capital_gain", "capital_loss"], inplace=True, errors="ignore")
     df["work_intensity"] = df["hours_per_week"] * df["education_num"]
     df["income"] = df["income"].str.strip().str.replace(".", "", regex=False)
     df["income"] = df["income"].map({"<=50K": 0, ">50K": 1})
@@ -86,18 +85,19 @@ with st.sidebar:
     test_file  = st.file_uploader("Upload Test CSV",  type="csv")
 
     st.subheader("Model Settings")
-    lr_threshold = st.slider("Logistic Regression Threshold", 0.1, 0.9, 0.35, 0.05)
+    lr_threshold = st.slider("Logistic Regression Threshold", 0.1, 0.9, 0.4, 0.05)
     dt_threshold = st.slider("Decision Tree Threshold",        0.1, 0.9, 0.40, 0.05)
-    dt_max_depth = st.slider("Decision Tree Max Depth",  2, 20, 8)
+    dt_max_depth = st.slider("Decision Tree Max Depth",  2, 20, 10)
     rf_threshold = st.slider("Random Forest Threshold",        0.1, 0.9, 0.40, 0.05)
-    rf_n_estimators = st.slider("Random Forest Trees",  50, 500, 100, 50)
-    rf_max_depth = st.slider("Random Forest Max Depth", 2, 20, 10)
-    xgb_n_estimators = st.slider("XGBoost Rounds",      50, 500, 100, 50)
+    rf_n_estimators = st.slider("Random Forest Trees",  50, 500, 200, 50)
+    rf_max_depth = st.slider("Random Forest Max Depth", 2, 20, 20)
+    xgb_threshold = st.slider("XG boost Threshold", 0.1, 0.9, 0.5, 0.05)
+    xgb_n_estimators = st.slider("XGBoost Rounds",      50, 500, 200, 50)
     xgb_lr = st.slider("XGBoost Learning Rate",         0.01, 0.3, 0.1, 0.01)
     xgb_max_depth = st.slider("XGBoost Max Depth",      2, 10, 5)
 
     st.markdown("---")
-    use_smote = st.checkbox("Apply SMOTE Balancing", value=True)
+    # use_smote = st.checkbox("Apply SMOTE Balancing", value=True)
     run_btn   = st.button("Run Pipeline", use_container_width=True, type="primary")
 
 # ================================
@@ -120,8 +120,6 @@ if run_btn:
         train = preprocess(train_raw)
         test  = preprocess(test_raw)
 
-        assert train["income"].isna().sum() == 0
-        assert test["income"].isna().sum()  == 0
 
         X_train = train.drop("income", axis=1)
         y_train = train["income"]
@@ -139,36 +137,34 @@ if run_btn:
         X_test_proc   = col_prep.transform(X_test)
         before_counts = np.bincount(y_train)
 
-        if use_smote:
-            smote = SMOTE(random_state=42)
-            X_train_proc, y_train = smote.fit_resample(X_train_proc, y_train)
-        after_counts = np.bincount(y_train)
+        # if use_smote:
+        #     smote = SMOTE(random_state=42)
+        #     X_train_proc, y_train = smote.fit_resample(X_train_proc, y_train)
+        # after_counts = np.bincount(y_train)
 
         # ── Logistic Regression ───────────────────────────────────────────
-        log_reg = LogisticRegression(C=10, max_iter=1000, solver="liblinear",
-                                     random_state=42, penalty="l2")
+        log_reg = LogisticRegression(C=1, max_iter=1000, solver="liblinear",
+                                     random_state=42, penalty="l2",class_weight=None)
         log_reg.fit(X_train_proc, y_train)
 
         # ── Decision Tree ─────────────────────────────────────────────────
         dec_tree = DecisionTreeClassifier(
             random_state=42, max_depth=dt_max_depth,
-            min_samples_leaf=10, min_samples_split=15,
-            criterion="gini", ccp_alpha=0.0001)
+            min_samples_leaf=5, min_samples_split=2,
+            criterion="entropy", ccp_alpha=0.0001)
         dec_tree.fit(X_train_proc, y_train)
 
         # ── Random Forest ─────────────────────────────────────────────────
         rand_forest = RandomForestClassifier(
             n_estimators=rf_n_estimators, max_depth=rf_max_depth,
-            min_samples_leaf=5, min_samples_split=10,
-            random_state=42, n_jobs=-1)
+            min_samples_leaf=5, min_samples_split=5,
+            random_state=42, n_jobs=-1,class_weight="balanced",max_features="sqrt")
         rand_forest.fit(X_train_proc, y_train)
 
         # ── XGBoost ───────────────────────────────────────────────────────
         xgb = XGBClassifier(
             n_estimators=xgb_n_estimators, learning_rate=xgb_lr,
-            max_depth=xgb_max_depth, subsample=0.8, colsample_bytree=0.8,
-            use_label_encoder=False, eval_metric="logloss",
-            random_state=42, n_jobs=-1)
+            max_depth=xgb_max_depth,objective='binary:logistic')
         xgb.fit(X_train_proc, y_train)
 
         # ── Cache ─────────────────────────────────────────────────────────
@@ -179,8 +175,8 @@ if run_btn:
             "X_test": X_test,   "y_test": y_test,
             "X_train_proc": X_train_proc, "X_test_proc": X_test_proc,
             "col_prep": col_prep,
-            "before_counts": before_counts, "after_counts": after_counts,
-            "use_smote": use_smote,
+            # "before_counts": before_counts, "after_counts": after_counts,
+            # "use_smote": use_smote,
             "log_reg": log_reg, "dec_tree": dec_tree,
             "rand_forest": rand_forest, "xgb": xgb,
             "pipeline_ready": True,
@@ -202,9 +198,9 @@ y_test        = st.session_state.y_test
 X_train_proc  = st.session_state.X_train_proc
 X_test_proc   = st.session_state.X_test_proc
 col_prep      = st.session_state.col_prep
-before_counts = st.session_state.before_counts
-after_counts  = st.session_state.after_counts
-use_smote     = st.session_state.use_smote
+# before_counts = st.session_state.before_counts
+# after_counts  = st.session_state.after_counts
+# use_smote     = st.session_state.use_smote
 log_reg       = st.session_state.log_reg
 dec_tree      = st.session_state.dec_tree
 rand_forest   = st.session_state.rand_forest
@@ -268,17 +264,17 @@ with tab_pre:
         st.dataframe(test.head(8), use_container_width=True)
 
 
-    if use_smote:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("**Class Balance Before SMOTE**")
-            st.bar_chart(pd.DataFrame({"Count": before_counts}, index=["<=50K", ">50K"]))
-        with c2:
-            st.markdown("**Class Balance After SMOTE**")
-            st.bar_chart(pd.DataFrame({"Count": after_counts},  index=["<=50K", ">50K"]))
-    else:
-        st.markdown("**Class Balance**")
-        st.bar_chart(pd.DataFrame({"Count": before_counts}, index=["<=50K", ">50K"]))
+    # if use_smote:
+    #     c1, c2 = st.columns(2)
+    #     with c1:
+    #         st.markdown("**Class Balance Before SMOTE**")
+    #         st.bar_chart(pd.DataFrame({"Count": before_counts}, index=["<=50K", ">50K"]))
+    #     with c2:
+    #         st.markdown("**Class Balance After SMOTE**")
+    #         st.bar_chart(pd.DataFrame({"Count": after_counts},  index=["<=50K", ">50K"]))
+    # else:
+    #     st.markdown("**Class Balance**")
+    #     st.bar_chart(pd.DataFrame({"Count": before_counts}, index=["<=50K", ">50K"]))
 
 
 
