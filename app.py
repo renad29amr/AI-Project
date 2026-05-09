@@ -87,9 +87,9 @@ with st.sidebar:
 
     st.subheader("Model Settings")
     lr_threshold = st.slider("Logistic Regression Threshold", 0.1, 0.9, 0.4, 0.05)
-    dt_threshold = st.slider("Decision Tree Threshold",        0.1, 0.9, 0.6, 0.05)
+    dt_threshold = st.slider("Decision Tree Threshold",        0.1, 0.9, 0.4, 0.05)
     dt_max_depth = st.slider("Decision Tree Max Depth",  2, 20, 10)
-    rf_threshold = st.slider("Random Forest Threshold",        0.1, 0.9, 0.40, 0.05)
+    rf_threshold = st.slider("Random Forest Threshold",        0.1, 0.9, 0.6, 0.05)
     rf_n_estimators = st.slider("Random Forest Trees",  50, 500, 200, 50)
     rf_max_depth = st.slider("Random Forest Max Depth", 2, 20, 20)
     xgb_threshold = st.slider("XG boost Threshold", 0.1, 0.9, 0.5, 0.05)
@@ -136,7 +136,7 @@ if run_btn:
         ])
         X_train_proc  = col_prep.fit_transform(X_train)
         X_test_proc   = col_prep.transform(X_test)
-        before_counts = np.bincount(y_train)
+        # before_counts = np.bincount(y_train)
 
         # if use_smote:
         #     smote = SMOTE(random_state=42)
