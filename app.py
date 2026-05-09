@@ -61,6 +61,7 @@ def preprocess(df):
             df[col] = df[col].fillna(df[col].mode()[0])
     df.drop(columns=["fnlwgt"], inplace=True, errors="ignore")
     df.drop(columns=["education"], inplace=True, errors="ignore")
+    df.drop(columns=["native_country"], inplace=True, errors="ignore")
     df["capital_net"] = df["capital_gain"] - df["capital_loss"]
     df["work_intensity"] = df["hours_per_week"] * df["education_num"]
     df["income"] = df["income"].str.strip().str.replace(".", "", regex=False)
@@ -86,7 +87,7 @@ with st.sidebar:
 
     st.subheader("Model Settings")
     lr_threshold = st.slider("Logistic Regression Threshold", 0.1, 0.9, 0.4, 0.05)
-    dt_threshold = st.slider("Decision Tree Threshold",        0.1, 0.9, 0.40, 0.05)
+    dt_threshold = st.slider("Decision Tree Threshold",        0.1, 0.9, 0.6, 0.05)
     dt_max_depth = st.slider("Decision Tree Max Depth",  2, 20, 10)
     rf_threshold = st.slider("Random Forest Threshold",        0.1, 0.9, 0.40, 0.05)
     rf_n_estimators = st.slider("Random Forest Trees",  50, 500, 200, 50)
