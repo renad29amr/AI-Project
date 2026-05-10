@@ -143,6 +143,12 @@ if run_btn:
         #     X_train_proc, y_train = smote.fit_resample(X_train_proc, y_train)
         # after_counts = np.bincount(y_train)
 
+
+         # SVM Model
+        svm_model = SVC(probability=True, random_state=42,C=1,class_weight="balanced",gamma="scale",kernel="rbf")
+        svm_model.fit(X_train_proc,y_train)
+
+
         # ── Logistic Regression ───────────────────────────────────────────
         log_reg = LogisticRegression(C=1, max_iter=1000, solver="liblinear",
                                      random_state=42, penalty="l2",class_weight=None)
@@ -161,6 +167,8 @@ if run_btn:
             min_samples_leaf=5, min_samples_split=5,
             random_state=42, n_jobs=-1,class_weight="balanced",max_features="sqrt")
         rand_forest.fit(X_train_proc, y_train)
+
+        
 
         # ── XGBoost ───────────────────────────────────────────────────────
         xgb = XGBClassifier(
